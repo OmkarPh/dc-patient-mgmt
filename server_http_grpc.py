@@ -1,3 +1,4 @@
+import concurrent.futures
 import sqlite3
 from fastapi import FastAPI
 from fastapi import FastAPI, HTTPException
@@ -8,6 +9,8 @@ from concurrent import futures
 from rpc import patient_service_pb2
 from rpc import patient_service_pb2_grpc
 import sqlite3
+from config import GRPC_PORT, HTTP_PORT
+
 
 class Patient:
     def __init__(self, name, age, gender, blood_pressure=None, diabetes_level=None, blood_group=None, height=None, weight=None):
@@ -21,6 +24,8 @@ class Patient:
         self.weight = weight
 
 # Pydantic model for request and response
+
+
 class PatientModel(BaseModel):
     name: str
     age: int
@@ -30,6 +35,7 @@ class PatientModel(BaseModel):
     blood_group: str = None
     height: float = None
     weight: float = None
+
 
 class PatientDBManager:
     def __init__(self):
@@ -87,13 +93,47 @@ class PatientDBManager:
 
     def update_patient(self, patient_id, new_patient_data):
         cursor = self.conn.cursor()
-        cursor.execute('''
+
+        set_clause = []
+        values = []
+
+        if new_patient_data.name:
+            set_clause.append("name=?")
+            values.append(new_patient_data.name)
+        if new_patient_data.age:
+            set_clause.append("age=?")
+            values.append(new_patient_data.age)
+        if new_patient_data.gender:
+            set_clause.append("gender=?")
+            values.append(new_patient_data.gender)
+        if new_patient_data.blood_pressure:
+            set_clause.append("blood_pressure=?")
+            values.append(new_patient_data.blood_pressure)
+        if new_patient_data.diabetes_level:
+            set_clause.append("diabetes_level=?")
+            values.append(new_patient_data.diabetes_level)
+        if new_patient_data.blood_group:
+            set_clause.append("blood_group=?")
+            values.append(new_patient_data.blood_group)
+        if new_patient_data.height:
+            set_clause.append("height=?")
+            values.append(new_patient_data.height)
+        if new_patient_data.weight:
+            set_clause.append("weight=?")
+            values.append(new_patient_data.weight)
+
+        # Construct the SQL query
+        sql_query = '''
             UPDATE patients
-            SET name=?, age=?, gender=?, blood_pressure=?, diabetes_level=?, blood_group=?, height=?, weight=?
+            SET {}
             WHERE id=?
-        ''', (new_patient_data.name, new_patient_data.age, new_patient_data.gender,
-              new_patient_data.blood_pressure, new_patient_data.diabetes_level, new_patient_data.blood_group,
-              new_patient_data.height, new_patient_data.weight, patient_id))
+        '''.format(', '.join(set_clause))
+
+        # Add the patient_id to values list
+        values.append(patient_id)
+
+        # Execute the query
+        cursor.execute(sql_query, values)
         self.conn.commit()
         return True
 
@@ -103,7 +143,7 @@ def sample_db_manager_execution():
 
     # Adding a patient
     patient1 = Patient(name="John Doe", age=30, gender="Male", blood_pressure="120/80", diabetes_level=5.5,
-                        blood_group="O+", height=175.0, weight=70.5)
+                       blood_group="O+", height=175.0, weight=70.5)
     db_manager.add_patient(patient1)
 
     # Retrieving all patients
@@ -120,12 +160,13 @@ def sample_db_manager_execution():
     # Modifying a patient's details
     patient_id_to_update = 1
     new_patient_data = Patient(name="John Doe Updated", age=32, gender="Male", blood_pressure="130/85",
-                                diabetes_level=6.0, blood_group="O+", height=178.0, weight=72.5)
+                               diabetes_level=6.0, blood_group="O+", height=178.0, weight=72.5)
     db_manager.update_patient(patient_id_to_update, new_patient_data)
 
     # Retrieving the updated patient
     updated_patient = db_manager.get_patient_by_id(patient_id_to_update)
-    print(f"\nUpdated Patient with ID {patient_id_to_update}: {updated_patient}")
+    print(
+        f"\nUpdated Patient with ID {patient_id_to_update}: {updated_patient}")
     db_manager.conn.close()
 
 # sample_db_manager_execution()
@@ -143,6 +184,8 @@ def add_patient(patient: PatientModel):
     return patient
 
 # FastAPI HTTP endpoint to retrieve all patients
+
+
 @app.get("/patients/", response_model=List[PatientModel])
 def get_all_patients():
     db_manager = PatientDBManager()
@@ -150,6 +193,8 @@ def get_all_patients():
     return patients
 
 # FastAPI HTTP endpoint to retrieve a single patient by ID
+
+
 @app.get("/patients/{patient_id}", response_model=PatientModel)
 def get_patient_by_id(patient_id: int):
     db_manager = PatientDBManager()
@@ -160,6 +205,8 @@ def get_patient_by_id(patient_id: int):
     return patient
 
 # FastAPI HTTP endpoint to update a patient's details
+
+
 @app.put("/patients/{patient_id}", response_model=PatientModel)
 def update_patient(patient_id: int, new_patient_data: PatientModel):
     db_manager = PatientDBManager()
@@ -172,8 +219,7 @@ def update_patient(patient_id: int, new_patient_data: PatientModel):
     return new_patient_data
 
 
-
-# RPC (Not working)
+# RPC
 class PatientDbRpcServiceProvider(patient_service_pb2_grpc.PatientServiceServicer):
     def add_patient(self, request, context):
         db_manager = PatientDBManager()
@@ -212,7 +258,7 @@ class PatientDbRpcServiceProvider(patient_service_pb2_grpc.PatientServiceService
         patients = patient_service_pb2.Patient(**patient_model.dict())
         db_manager.conn.close()
         return patients
-    
+
     def update_patient(self, request, context):
         db_manager = PatientDBManager()
         patient_id = request.patient_id
@@ -226,7 +272,7 @@ class PatientDbRpcServiceProvider(patient_service_pb2_grpc.PatientServiceService
             patient = patient_service_pb2.Patient()
             db_manager.conn.close()
             return patient
-        
+
         updated_patient_model = PatientModel(**{
             "name": new_patient_data.name,
             "age": new_patient_data.age,
@@ -238,34 +284,35 @@ class PatientDbRpcServiceProvider(patient_service_pb2_grpc.PatientServiceService
             "weight": new_patient_data.weight
         })
 
-        db_manager.update_patient(patient_id, Patient(**updated_patient_model.dict()))
+        db_manager.update_patient(
+            patient_id, Patient(**updated_patient_model.dict()))
         patient = patient_service_pb2.Patient(**updated_patient_model.dict())
         db_manager.conn.close()
         return patient
 
+
 def serve_grpc():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    patient_service_pb2_grpc.add_PatientServiceServicer_to_server(PatientDbRpcServiceProvider(), server)
-    server.add_insecure_port('[::]:50051')
+    patient_service_pb2_grpc.add_PatientServiceServicer_to_server(
+        PatientDbRpcServiceProvider(), server)
+    server.add_insecure_port(f'[::]:{GRPC_PORT}')
     server.start()
-    print("RPC server started on port 50051")
+    print(f"RPC server started on port {GRPC_PORT}")
     server.wait_for_termination()
+
 
 def serve_http():
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=HTTP_PORT)
 
 
-
-
-import concurrent.futures
 if __name__ == '__main__':
     # Create thread pool
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         # Submit tasks for serving gRPC and HTTP
         grpc_future = executor.submit(serve_grpc)
         http_future = executor.submit(serve_http)
-        
+
         try:
             # Wait for both tasks to complete
             grpc_result = grpc_future.result()
@@ -274,4 +321,3 @@ if __name__ == '__main__':
             # If Ctrl+C is pressed, cancel both tasks and shutdown servers gracefully
             grpc_future.cancel()
             http_future.cancel()
-
