@@ -1,0 +1,6 @@
+pydantic
+grpcio
+grpcio-tools
+fastapi[all]
+uvicorn[standard]
+

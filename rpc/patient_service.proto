@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package patient;
+
+message Patient {
+  string name = 1;
+  int32 age = 2;
+  string gender = 3;
+  string blood_pressure = 4;
+  float diabetes_level = 5;
+  string blood_group = 6;
+  float height = 7;
+  float weight = 8;
+}
+
+service PatientService {
+  rpc add_patient(Patient) returns (Patient);
+  rpc get_all_patients(Empty) returns (stream Patient);
+  rpc get_patient_by_id(Id) returns (Patient);
+  rpc update_patient(PatientWithId) returns (Patient);
+}
+
+message Empty {}
+
+message Id {
+  int32 patient_id = 1;
+}
+
+message PatientWithId {
+  int32 patient_id = 1;
+  Patient patient = 2;
+}

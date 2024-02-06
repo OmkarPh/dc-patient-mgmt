@@ -1,0 +1,17 @@
+curl --location 'http://127.0.0.1:8000/patients/' \
+--header 'accept: application/json' \
+--header 'Content-Type: application/json' \
+--data '{"name": "John Doe 5", "age": 32, "gender": "Male", "blood_pressure": "130/85", "diabetes_level": 6.0, "blood_group": "O+", "height": 178.0, "weight": 72.5}'
+
+curl --location 'http://127.0.0.1:8000/patients/' \
+--header 'accept: application/json'
+
+curl --location 'http://127.0.0.1:8000/patients/2' \
+--header 'accept: application/json'
+
+curl --location --request PUT 'http://127.0.0.1:8000/patients/1' \
+--header 'accept: application/json' \
+--header 'Content-Type: application/json' \
+--data '{"name": "John Doe", "age": 32, "gender": "Male", "blood_pressure": "130/85", "diabetes_level": 6.0, "blood_group": "O+", "height": 178.0, "weight": 72.5}'
+
+
