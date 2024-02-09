@@ -2,6 +2,7 @@ import socket
 import sys
 import os
 import ast
+from tabulate import tabulate
 from config import SOCKET_PORT
 from server_http_grpc import PatientDBManager
 
@@ -41,13 +42,24 @@ def main(patient_id):
         os.system('cls' if os.name == 'nt' else 'clear')
 
         print()
-        print(f"Patient details:")
-        for key, value in patient.items():
-            print(f"{key}: {value}")
-        print()
-        print("Patient files:")
-        for filename, metadata in files_metadata.items():
-            print(f"{filename}, Size: {metadata['size']} bytes, Last Modified: {metadata['last_modified']}")
+        # print(f"Patient details:")
+        # for key, value in patient.items():
+        #     print(f"{key}: {value}")
+        # print()
+        # print("Patient files:")
+        # for filename, metadata in files_metadata.items():
+        #     print(f"{filename}, Size: {metadata['size']} bytes, Last Modified: {metadata['last_modified']}")
+        
+        
+        patient_details_table = [[key, value] for key, value in patient.items()]
+        print("\nPatient Details:")
+        print(tabulate(patient_details_table, headers=["Attribute", "Value"], tablefmt="grid"))
+
+        # Display patient files in a table
+        files_table = [[filename, metadata['size'], metadata['last_modified']] for filename, metadata in files_metadata.items()]
+        print("\nPatient Files:")
+        print(tabulate(files_table, headers=["Filename", "Size (bytes)", "Last Modified"], tablefmt="grid"))
+
 
 def usage():
     print("Usage: python client.py <patient_id>")
