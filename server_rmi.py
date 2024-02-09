@@ -93,7 +93,9 @@ def start_server():
 
     # Register the PatientDBManager class with the daemon
     
-    uri = daemon.register()
+    uri = daemon.register(PatientDBManager)
+    ns = Pyro4.locateNS()
+    ns.register("my_object", uri)
 
     # Print the uri so it can be used in the client
     print(f"Ready. The uri is: {uri}")

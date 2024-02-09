@@ -13,9 +13,11 @@ import sys
 #         self.height = height
 #         self.weight = weight
 
-def start_client(uri):
+def start_client():
    
-    # Use Pyro4's proxy method to get a proxy for the server
+    ns = Pyro4.locateNS()
+    uri = ns.lookup("my_object")
+    my_object = Pyro4.Proxy(uri)
     db_manager = Pyro4.Proxy(uri)
 
     patient1 = {'name':"John Doe", 'age':30, 'gender':"Male", 'blood_pressure':"120/80", 'diabetes_level':5.5,
@@ -45,11 +47,5 @@ def start_client(uri):
     print(f"\nUpdated Patient with ID {patient_id_to_update}: {updated_patient}")
 
 if __name__ == "__main__":
-    # Replace with the uri provided by the server
-    if __name__ == "__main__":
-        if len(sys.argv) < 2:
-            print("Please provide the URI as a command line argument.")
-            sys.exit(1)
-        
-        uri = sys.argv[1]
-        start_client(uri)
+
+    start_client()
