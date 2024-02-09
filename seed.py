@@ -110,7 +110,7 @@ def seed_default_patients():
     ]
 
     # Insert default patients into the database
-    for patient_data in default_patients[:2]:
+    for patient_data in default_patients[:5]:
         db_manager.add_patient(patient_data)
 
     # Close the database connection
