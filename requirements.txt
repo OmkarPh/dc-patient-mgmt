@@ -4,3 +4,4 @@ grpcio-tools
 fastapi[all]
 uvicorn[standard]
 Pyro4
+tabulate
